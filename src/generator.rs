@@ -91,7 +91,10 @@ impl Generator {
         let namespace_as_module = true;
         deps.sort_by_key(|schema| schema.namespace().unwrap_or("".to_string()));
         let mut previous_namespace = String::from("");
-        while let Some(s) = deps.pop() {
+        for s in deps.iter() {
+            let s = s.to_owned();
+            // while let Some(s) = deps.pop() {
+            println!("{:?}", s.name());
             if s.namespace().unwrap_or(String::from("")) != previous_namespace {
                 if !previous_namespace.is_empty() {
                     output.write_fmt(format_args!("}}"))?;
@@ -482,13 +485,13 @@ mod tests {
 
         let expected = r#"
 #[derive(Debug, PartialEq, Clone, serde::Deserialize, serde::Serialize)]
-pub struct B {
-    pub field_one: A,
+pub struct A {
+    pub field_one: f32,
 }
 
 #[derive(Debug, PartialEq, Clone, serde::Deserialize, serde::Serialize)]
-pub struct A {
-    pub field_one: f32,
+pub struct B {
+    pub field_one: A,
 }
 "#;
 
