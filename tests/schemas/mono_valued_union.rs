@@ -1,4 +1,11 @@
-
+mod some_ns {
+    use super::*;
+#[derive(Debug, PartialEq, Eq, Clone, serde::Deserialize, serde::Serialize)]
+pub struct Mono {
+    #[serde(rename = "myField")]
+    pub my_field: UnionLong,
+}
+}
 /// Auto-generated type for unnamed Avro union variants.
 #[derive(Debug, PartialEq, Eq, Clone, serde::Deserialize, serde::Serialize)]
 #[serde(remote = "Self")]
@@ -88,10 +95,4 @@ impl<'de> serde::Deserialize<'de> for UnionLong {
     {
         Self::deserialize(deserializer)
     }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, serde::Deserialize, serde::Serialize)]
-pub struct Mono {
-    #[serde(rename = "myField")]
-    pub my_field: UnionLong,
 }

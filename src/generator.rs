@@ -89,35 +89,37 @@ impl Generator {
         let mut gs = GenState::new(deps)?.with_chrono_dates(self.templater.use_chrono_dates);
 
         let namespace_as_module = true;
+
         deps.sort_by_key(|schema| schema.namespace().unwrap_or("".to_string()));
         let mut previous_namespace = String::from("");
-        for s in deps.iter() {
-            let s = s.to_owned();
-            // while let Some(s) = deps.pop() {
-            println!("{:?}", s.name());
-            if s.namespace().unwrap_or(String::from("")) != previous_namespace {
-                if !previous_namespace.is_empty() {
-                    output.write_fmt(format_args!("}}"))?;
+        while let Some(s) = deps.pop() {
+            // for s in deps.iter() {
+            // let s = s.to_owned();
+            println!("Name: {:?}", s.name());
+            if let Some(namespace) = s.namespace() {
+                // namespace change
+                if namespace_as_module && namespace != previous_namespace {
+                    // there was another ns before, we need to close it
+                    if !previous_namespace.is_empty() {
+                        output.write_fmt(format_args!("}}"))?;
+                    }
+                    // start new namespace
+                    output.write_fmt(format_args!(
+                        "mod {} {{\n    use super::*;",
+                        s.namespace().unwrap_or(String::from("")).replace(".", "_")
+                    ))?;
                 }
-                output.write_fmt(format_args!(
-                    "mod {} {{",
-                    s.namespace().unwrap_or(String::from(""))
-                ))?;
+                previous_namespace = namespace;
+            } else if !previous_namespace.is_empty() {
+                // there were other namespaces before and now comes non-namespaced
+                output.write_fmt(format_args!("}}"))?;
+                previous_namespace = String::from("");
             }
-            previous_namespace = s.namespace().unwrap_or("".to_string());
             match s {
                 // Simply generate code
                 Schema::Fixed { .. } => {
                     let code = &self.templater.str_fixed(&s)?;
-                    if let Some(namespace) = s.namespace() {
-                        if namespace_as_module {
-                            output.write_fmt(format_args!("mod {} {{", namespace))?;
-                        }
-                    }
-                    output.write_all(code.as_bytes())?;
-                    if s.namespace().is_some() && namespace_as_module {
-                        output.write_fmt(format_args!("}}"))?;
-                    }
+                    output.write_all(code.as_bytes())?
                 }
                 Schema::Enum { .. } => {
                     let code = &self.templater.str_enum(&s)?;
@@ -161,8 +163,9 @@ impl Generator {
                 _ => return Err(Error::Schema(format!("Not a valid root schema: {:?}", s))),
             }
         }
-        if !previous_namespace.is_empty() {
-            output.write_fmt(format_args!("}}"))?;
+        // there were only namespaces and it needs to be closed
+        if !previous_namespace.is_empty() && namespace_as_module {
+            output.write_fmt(format_args!("}}\n"))?;
         }
 
         Ok(())
@@ -485,13 +488,13 @@ mod tests {
 
         let expected = r#"
 #[derive(Debug, PartialEq, Clone, serde::Deserialize, serde::Serialize)]
-pub struct A {
-    pub field_one: f32,
+pub struct B {
+    pub field_one: A,
 }
 
 #[derive(Debug, PartialEq, Clone, serde::Deserialize, serde::Serialize)]
-pub struct B {
-    pub field_one: A,
+pub struct A {
+    pub field_one: f32,
 }
 "#;
 

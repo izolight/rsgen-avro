@@ -1,4 +1,5 @@
-
+mod org_apache_avro {
+    use super::*;
 #[derive(Debug, PartialEq, Eq, Clone, serde::Deserialize, serde::Serialize)]
 pub struct Node {
     pub label: String,
@@ -19,6 +20,38 @@ pub enum Kind {
     C,
 }
 
+#[derive(Debug, PartialEq, Clone, serde::Deserialize, serde::Serialize)]
+pub struct Interop {
+    #[serde(rename = "intField")]
+    pub int_field: i32,
+    #[serde(rename = "longField")]
+    pub long_field: i64,
+    #[serde(rename = "stringField")]
+    pub string_field: String,
+    #[serde(rename = "boolField")]
+    pub bool_field: bool,
+    #[serde(rename = "floatField")]
+    pub float_field: f32,
+    #[serde(rename = "doubleField")]
+    pub double_field: f64,
+    #[serde(rename = "bytesField")]
+    #[serde(with = "apache_avro::serde_avro_bytes")]
+    pub bytes_field: Vec<u8>,
+    #[serde(rename = "arrayField")]
+    pub array_field: Vec<f64>,
+    #[serde(rename = "mapField")]
+    pub map_field: ::std::collections::HashMap<String, Foo>,
+    #[serde(rename = "unionField")]
+    pub union_field: UnionBooleanDoubleArrayBytes,
+    #[serde(rename = "enumField")]
+    pub enum_field: Kind,
+    #[serde(rename = "fixedField")]
+    #[serde(with = "apache_avro::serde_avro_fixed")]
+    pub fixed_field: Md5,
+    #[serde(rename = "recordField")]
+    pub record_field: Node,
+}
+}
 /// Auto-generated type for unnamed Avro union variants.
 #[derive(Debug, PartialEq, Clone, serde::Deserialize, serde::Serialize)]
 #[serde(remote = "Self")]
@@ -133,36 +166,4 @@ impl<'de> serde::Deserialize<'de> for UnionBooleanDoubleArrayBytes {
     {
         Self::deserialize(deserializer)
     }
-}
-
-#[derive(Debug, PartialEq, Clone, serde::Deserialize, serde::Serialize)]
-pub struct Interop {
-    #[serde(rename = "intField")]
-    pub int_field: i32,
-    #[serde(rename = "longField")]
-    pub long_field: i64,
-    #[serde(rename = "stringField")]
-    pub string_field: String,
-    #[serde(rename = "boolField")]
-    pub bool_field: bool,
-    #[serde(rename = "floatField")]
-    pub float_field: f32,
-    #[serde(rename = "doubleField")]
-    pub double_field: f64,
-    #[serde(rename = "bytesField")]
-    #[serde(with = "apache_avro::serde_avro_bytes")]
-    pub bytes_field: Vec<u8>,
-    #[serde(rename = "arrayField")]
-    pub array_field: Vec<f64>,
-    #[serde(rename = "mapField")]
-    pub map_field: ::std::collections::HashMap<String, Foo>,
-    #[serde(rename = "unionField")]
-    pub union_field: UnionBooleanDoubleArrayBytes,
-    #[serde(rename = "enumField")]
-    pub enum_field: Kind,
-    #[serde(rename = "fixedField")]
-    #[serde(with = "apache_avro::serde_avro_fixed")]
-    pub fixed_field: Md5,
-    #[serde(rename = "recordField")]
-    pub record_field: Node,
 }

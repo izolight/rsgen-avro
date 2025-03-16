@@ -1,4 +1,3 @@
-
 /// Auto-generated type for unnamed Avro union variants.
 #[derive(Debug, PartialEq, Clone, serde::Deserialize, serde::Serialize)]
 #[serde(remote = "Self")]
@@ -171,7 +170,10 @@ impl<'de> serde::Deserialize<'de> for UnionStringLongDoubleBooleanBytes {
     }
 }
 
+mod com_test {
+    use super::*;
 #[derive(Debug, PartialEq, Clone, serde::Deserialize, serde::Serialize)]
 pub struct Contact {
     pub extra: ::std::collections::HashMap<String, Option<UnionStringLongDoubleBooleanBytes>>,
+}
 }

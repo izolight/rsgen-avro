@@ -1,4 +1,5 @@
-
+mod com_example_data {
+    use super::*;
 #[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Clone, serde::Deserialize, serde::Serialize)]
 pub enum MeasurementUnit {
     #[serde(rename = "mJ")]
@@ -17,3 +18,4 @@ pub struct MyRecord {
 
 #[inline(always)]
 fn default_myrecord_unit() -> MeasurementUnit { MeasurementUnit::MJ }
+}
