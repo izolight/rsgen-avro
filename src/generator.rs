@@ -80,6 +80,24 @@ impl Generator {
         Ok(())
     }
 
+    fn add_to_namespace_map(
+        &self,
+        per_namespace: &mut HashMap<String, Vec<String>>,
+        s: &Schema,
+        code: String,
+    ) {
+        let default_namespace = String::from("default");
+        let ns = if self.templater.prefix_namespace {
+            s.namespace().unwrap_or(default_namespace.clone()).clone()
+        } else {
+            default_namespace.clone()
+        };
+        per_namespace
+            .entry(ns)
+            .and_modify(|vec| vec.push(code.clone()))
+            .or_insert_with(|| vec![code]);
+    }
+
     /// Given an Avro `schema`:
     /// * Find its ordered, nested dependencies with `deps_stack(schema)`
     /// * Pops sub-schemas and generate appropriate Rust types
@@ -89,32 +107,23 @@ impl Generator {
         let mut gs = GenState::new(deps)?.with_chrono_dates(self.templater.use_chrono_dates);
 
         // temporary hashmap for namespace separated code
-        let mut per_namespace: HashMap<String, Vec<&String>> = HashMap::new();
-        let default_namespace = String::from("default");
+        let mut per_namespace: HashMap<String, Vec<String>> = HashMap::new();
         while let Some(s) = deps.pop() {
             match s {
                 // Simply generate code
                 Schema::Fixed { .. } => {
-                    let code = &self.templater.str_fixed(&s)?;
-                    if self.templater.prefix_namespace {
-                        if let Some(namespace) = s.namespace() {}
-                    } else {
-                        if let Some(entries) = per_namespace.get_mut(&default_namespace) {
-                        } else {
-                            per_namespace.insert(default_namespace, vec![code]);
-                        }
-                    }
-                    output.write_all(code.as_bytes())?
+                    let code = self.templater.str_fixed(&s)?;
+                    self.add_to_namespace_map(&mut per_namespace, &s, code);
                 }
                 Schema::Enum { .. } => {
-                    let code = &self.templater.str_enum(&s)?;
-                    output.write_all(code.as_bytes())?
+                    let code = self.templater.str_enum(&s)?;
+                    self.add_to_namespace_map(&mut per_namespace, &s, code);
                 }
 
                 // Generate code with potentially nested types
                 Schema::Record { .. } => {
-                    let code = &self.templater.str_record(&s, &gs)?;
-                    output.write_all(code.as_bytes())?
+                    let code = self.templater.str_record(&s, &gs)?;
+                    self.add_to_namespace_map(&mut per_namespace, &s, code);
                 }
 
                 // Register inner type for it to be used as a nested type later
@@ -136,8 +145,8 @@ impl Generator {
                     if (union.is_nullable() && union.variants().len() > 2)
                         || (!union.is_nullable() && !union.variants().is_empty())
                     {
-                        let code = &self.templater.str_union_enum(&s, &gs)?;
-                        output.write_all(code.as_bytes())?
+                        let code = self.templater.str_union_enum(&s, &gs)?;
+                        self.add_to_namespace_map(&mut per_namespace, &s, code);
                     }
 
                     // Register inner union for it to be used as a nested type later
@@ -146,6 +155,17 @@ impl Generator {
                 }
 
                 _ => return Err(Error::Schema(format!("Not a valid root schema: {:?}", s))),
+            }
+        }
+        for (namespace, code_entries) in per_namespace {
+            if self.templater.prefix_namespace {
+                output.write_fmt(format_args!("mod {} {{", namespace))?;
+            }
+            for code in code_entries {
+                output.write_all(code.as_bytes())?;
+            }
+            if self.templater.prefix_namespace {
+                output.write_all("}\n\n".as_bytes())?;
             }
         }
 
