@@ -88,11 +88,22 @@ impl Generator {
     fn gen_in_order(&self, deps: &mut Vec<Schema>, output: &mut impl Write) -> Result<()> {
         let mut gs = GenState::new(deps)?.with_chrono_dates(self.templater.use_chrono_dates);
 
+        // temporary hashmap for namespace separated code
+        let mut per_namespace: HashMap<String, Vec<&String>> = HashMap::new();
+        let default_namespace = String::from("default");
         while let Some(s) = deps.pop() {
             match s {
                 // Simply generate code
                 Schema::Fixed { .. } => {
                     let code = &self.templater.str_fixed(&s)?;
+                    if self.templater.prefix_namespace {
+                        if let Some(namespace) = s.namespace() {}
+                    } else {
+                        if let Some(entries) = per_namespace.get_mut(&default_namespace) {
+                        } else {
+                            per_namespace.insert(default_namespace, vec![code]);
+                        }
+                    }
                     output.write_all(code.as_bytes())?
                 }
                 Schema::Enum { .. } => {
