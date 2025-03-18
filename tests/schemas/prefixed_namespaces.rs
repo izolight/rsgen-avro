@@ -1,3 +1,26 @@
+mod another_ns {
+#[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Clone, serde::Deserialize, serde::Serialize)]
+pub enum AnotherNsStatus {
+    #[serde(rename = "UNKNOWN")]
+    Unknown,
+    #[serde(rename = "ACTIVE")]
+    Active,
+    #[serde(rename = "PAUSED")]
+    Paused,
+    #[serde(rename = "INACTIVE")]
+    Inactive,
+}
+}
+
+mod some_ns_b {
+#[derive(Debug, PartialEq, Eq, Clone, serde::Deserialize, serde::Serialize)]
+pub struct SomeNsBMetadata {
+    pub cost: i32,
+}
+}
+
+mod some_ns {
+    use super::*;
 
 #[derive(Debug, PartialEq, Eq, Clone, serde::Deserialize, serde::Serialize)]
 pub struct SomeNsMyRecord {
@@ -5,15 +28,38 @@ pub struct SomeNsMyRecord {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, serde::Deserialize, serde::Serialize)]
-pub struct SomeNsBMetadata {
-    pub cost: i32,
+pub struct SomeNsSomeRecord {
+    pub label: String,
+    #[serde(default = "default_somenssomerecord_parent")]
+    pub parent: Option<Box<SomeNsSomeRecord>>,
+    pub children: Vec<SomeNsSomeRecord>,
+    #[serde(default = "default_somenssomerecord_status")]
+    pub status: another_ns::AnotherNsStatus,
+    pub metadata_a: some_ns_a::SomeNsAMetadata,
+    pub metadata_b: some_ns_b::SomeNsBMetadata,
+    #[serde(default = "default_somenssomerecord_union_field")]
+    pub union_field: UnionSomeNsAMetadataSomeNsBMetadata,
+    pub record_without_ns: SomeNsMyRecord,
 }
 
+#[inline(always)]
+fn default_somenssomerecord_parent() -> Option<Box<SomeNsSomeRecord>> { None }
+
+#[inline(always)]
+fn default_somenssomerecord_status() -> AnotherNsStatus { AnotherNsStatus::Unknown }
+
+#[inline(always)]
+fn default_somenssomerecord_union_field() -> UnionSomeNsAMetadataSomeNsBMetadata { UnionSomeNsAMetadataSomeNsBMetadata::SomeNsAMetadata(SomeNsAMetadata { label: "default_label".to_owned(), }) }
+}
+
+mod some_ns_a {
 #[derive(Debug, PartialEq, Eq, Clone, serde::Deserialize, serde::Serialize)]
 pub struct SomeNsAMetadata {
     pub label: String,
 }
+}
 
+mod default {
 /// Auto-generated type for unnamed Avro union variants.
 #[derive(Debug, PartialEq, Eq, Clone, serde::Deserialize, serde::Serialize)]
 #[serde(remote = "Self")]
@@ -128,39 +174,4 @@ impl<'de> serde::Deserialize<'de> for UnionSomeNsAMetadataSomeNsBMetadata {
         Self::deserialize(deserializer)
     }
 }
-
-#[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Clone, serde::Deserialize, serde::Serialize)]
-pub enum AnotherNsStatus {
-    #[serde(rename = "UNKNOWN")]
-    Unknown,
-    #[serde(rename = "ACTIVE")]
-    Active,
-    #[serde(rename = "PAUSED")]
-    Paused,
-    #[serde(rename = "INACTIVE")]
-    Inactive,
 }
-
-#[derive(Debug, PartialEq, Eq, Clone, serde::Deserialize, serde::Serialize)]
-pub struct SomeNsSomeRecord {
-    pub label: String,
-    #[serde(default = "default_somenssomerecord_parent")]
-    pub parent: Option<Box<SomeNsSomeRecord>>,
-    pub children: Vec<SomeNsSomeRecord>,
-    #[serde(default = "default_somenssomerecord_status")]
-    pub status: AnotherNsStatus,
-    pub metadata_a: SomeNsAMetadata,
-    pub metadata_b: SomeNsBMetadata,
-    #[serde(default = "default_somenssomerecord_union_field")]
-    pub union_field: UnionSomeNsAMetadataSomeNsBMetadata,
-    pub record_without_ns: SomeNsMyRecord,
-}
-
-#[inline(always)]
-fn default_somenssomerecord_parent() -> Option<Box<SomeNsSomeRecord>> { None }
-
-#[inline(always)]
-fn default_somenssomerecord_status() -> AnotherNsStatus { AnotherNsStatus::Unknown }
-
-#[inline(always)]
-fn default_somenssomerecord_union_field() -> UnionSomeNsAMetadataSomeNsBMetadata { UnionSomeNsAMetadataSomeNsBMetadata::SomeNsAMetadata(SomeNsAMetadata { label: "default_label".to_owned(), }) }
