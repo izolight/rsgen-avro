@@ -159,14 +159,15 @@ impl Generator {
                 _ => return Err(Error::Schema(format!("Not a valid root schema: {:?}", s))),
             }
         }
+        let default_namespace = String::from("default");
         for (namespace, code_entries) in per_namespace {
-            if self.templater.prefix_namespace {
-                output.write_fmt(format_args!("mod {} {{\n    use super::*;", namespace))?;
+            if self.templater.prefix_namespace && namespace != default_namespace {
+                output.write_fmt(format_args!("mod {} {{\n", namespace))?;
             }
             for code in code_entries {
                 output.write_all(code.as_bytes())?;
             }
-            if self.templater.prefix_namespace {
+            if self.templater.prefix_namespace && namespace != default_namespace {
                 output.write_all("}\n\n".as_bytes())?;
             }
         }
