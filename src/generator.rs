@@ -1,4 +1,4 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::fs;
 use std::io::prelude::*;
 
@@ -82,13 +82,15 @@ impl Generator {
 
     fn add_to_namespace_map(
         &self,
-        per_namespace: &mut HashMap<String, Vec<String>>,
+        per_namespace: &mut BTreeMap<String, Vec<String>>,
         s: &Schema,
         code: String,
     ) {
         let default_namespace = String::from("default");
         let ns = if self.templater.prefix_namespace {
-            s.namespace().unwrap_or(default_namespace.clone()).clone()
+            s.namespace()
+                .unwrap_or(default_namespace.clone())
+                .replace(".", "_")
         } else {
             default_namespace.clone()
         };
@@ -107,7 +109,7 @@ impl Generator {
         let mut gs = GenState::new(deps)?.with_chrono_dates(self.templater.use_chrono_dates);
 
         // temporary hashmap for namespace separated code
-        let mut per_namespace: HashMap<String, Vec<String>> = HashMap::new();
+        let mut per_namespace: BTreeMap<String, Vec<String>> = BTreeMap::new();
         while let Some(s) = deps.pop() {
             match s {
                 // Simply generate code
@@ -159,7 +161,7 @@ impl Generator {
         }
         for (namespace, code_entries) in per_namespace {
             if self.templater.prefix_namespace {
-                output.write_fmt(format_args!("mod {} {{", namespace))?;
+                output.write_fmt(format_args!("mod {} {{\n    use super::*;", namespace))?;
             }
             for code in code_entries {
                 output.write_all(code.as_bytes())?;

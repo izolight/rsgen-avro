@@ -1,4 +1,5 @@
 mod another_ns {
+    use super::*;
 #[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Clone, serde::Deserialize, serde::Serialize)]
 pub enum AnotherNsStatus {
     #[serde(rename = "UNKNOWN")]
@@ -12,69 +13,23 @@ pub enum AnotherNsStatus {
 }
 }
 
-mod some_ns_b {
-#[derive(Debug, PartialEq, Eq, Clone, serde::Deserialize, serde::Serialize)]
-pub struct SomeNsBMetadata {
-    pub cost: i32,
-}
-}
-
-mod some_ns {
-    use super::*;
-
-#[derive(Debug, PartialEq, Eq, Clone, serde::Deserialize, serde::Serialize)]
-pub struct SomeNsMyRecord {
-    pub some_field: bool,
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, serde::Deserialize, serde::Serialize)]
-pub struct SomeNsSomeRecord {
-    pub label: String,
-    #[serde(default = "default_somenssomerecord_parent")]
-    pub parent: Option<Box<SomeNsSomeRecord>>,
-    pub children: Vec<SomeNsSomeRecord>,
-    #[serde(default = "default_somenssomerecord_status")]
-    pub status: another_ns::AnotherNsStatus,
-    pub metadata_a: some_ns_a::SomeNsAMetadata,
-    pub metadata_b: some_ns_b::SomeNsBMetadata,
-    #[serde(default = "default_somenssomerecord_union_field")]
-    pub union_field: UnionSomeNsAMetadataSomeNsBMetadata,
-    pub record_without_ns: SomeNsMyRecord,
-}
-
-#[inline(always)]
-fn default_somenssomerecord_parent() -> Option<Box<SomeNsSomeRecord>> { None }
-
-#[inline(always)]
-fn default_somenssomerecord_status() -> AnotherNsStatus { AnotherNsStatus::Unknown }
-
-#[inline(always)]
-fn default_somenssomerecord_union_field() -> UnionSomeNsAMetadataSomeNsBMetadata { UnionSomeNsAMetadataSomeNsBMetadata::SomeNsAMetadata(SomeNsAMetadata { label: "default_label".to_owned(), }) }
-}
-
-mod some_ns_a {
-#[derive(Debug, PartialEq, Eq, Clone, serde::Deserialize, serde::Serialize)]
-pub struct SomeNsAMetadata {
-    pub label: String,
-}
-}
-
 mod default {
+    use super::*;
 /// Auto-generated type for unnamed Avro union variants.
 #[derive(Debug, PartialEq, Eq, Clone, serde::Deserialize, serde::Serialize)]
 #[serde(remote = "Self")]
 pub enum UnionSomeNsAMetadataSomeNsBMetadata {
-    SomeNsAMetadata(SomeNsAMetadata),
-    SomeNsBMetadata(SomeNsBMetadata),
+    SomeNsAMetadata(some_ns_a::SomeNsAMetadata),
+    SomeNsBMetadata(some_ns_b::SomeNsBMetadata),
 }
 
-impl From<SomeNsAMetadata> for UnionSomeNsAMetadataSomeNsBMetadata {
-    fn from(v: SomeNsAMetadata) -> Self {
+impl From<some_ns_a::SomeNsAMetadata> for UnionSomeNsAMetadataSomeNsBMetadata {
+    fn from(v: some_ns_a::SomeNsAMetadata) -> Self {
         Self::SomeNsAMetadata(v)
     }
 }
 
-impl TryFrom<UnionSomeNsAMetadataSomeNsBMetadata> for SomeNsAMetadata {
+impl TryFrom<UnionSomeNsAMetadataSomeNsBMetadata> for some_ns_a::SomeNsAMetadata {
     type Error = UnionSomeNsAMetadataSomeNsBMetadata;
 
     fn try_from(v: UnionSomeNsAMetadataSomeNsBMetadata) -> Result<Self, Self::Error> {
@@ -86,13 +41,13 @@ impl TryFrom<UnionSomeNsAMetadataSomeNsBMetadata> for SomeNsAMetadata {
     }
 }
 
-impl From<SomeNsBMetadata> for UnionSomeNsAMetadataSomeNsBMetadata {
-    fn from(v: SomeNsBMetadata) -> Self {
+impl From<some_ns_b::SomeNsBMetadata> for UnionSomeNsAMetadataSomeNsBMetadata {
+    fn from(v: some_ns_b::SomeNsBMetadata) -> Self {
         Self::SomeNsBMetadata(v)
     }
 }
 
-impl TryFrom<UnionSomeNsAMetadataSomeNsBMetadata> for SomeNsBMetadata {
+impl TryFrom<UnionSomeNsAMetadataSomeNsBMetadata> for some_ns_b::SomeNsBMetadata {
     type Error = UnionSomeNsAMetadataSomeNsBMetadata;
 
     fn try_from(v: UnionSomeNsAMetadataSomeNsBMetadata) -> Result<Self, Self::Error> {
@@ -173,5 +128,53 @@ impl<'de> serde::Deserialize<'de> for UnionSomeNsAMetadataSomeNsBMetadata {
     {
         Self::deserialize(deserializer)
     }
+}
+}
+
+mod some_ns {
+    use super::*;
+#[derive(Debug, PartialEq, Eq, Clone, serde::Deserialize, serde::Serialize)]
+pub struct SomeNsMyRecord {
+    pub some_field: bool,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, serde::Deserialize, serde::Serialize)]
+pub struct SomeNsSomeRecord {
+    pub label: String,
+    #[serde(default = "default_somenssomerecord_parent")]
+    pub parent: Option<Box<SomeNsSomeRecord>>,
+    pub children: Vec<SomeNsSomeRecord>,
+    #[serde(default = "default_somenssomerecord_status")]
+    pub status: another_ns::AnotherNsStatus,
+    pub metadata_a: some_ns_a::SomeNsAMetadata,
+    pub metadata_b: some_ns_b::SomeNsBMetadata,
+    #[serde(default = "default_somenssomerecord_union_field")]
+    pub union_field: default::UnionSomeNsAMetadataSomeNsBMetadata,
+    pub record_without_ns: SomeNsMyRecord,
+}
+
+#[inline(always)]
+fn default_somenssomerecord_parent() -> Option<Box<SomeNsSomeRecord>> { None }
+
+#[inline(always)]
+fn default_somenssomerecord_status() -> another_ns::AnotherNsStatus { another_ns::AnotherNsStatus::Unknown }
+
+#[inline(always)]
+fn default_somenssomerecord_union_field() -> default::UnionSomeNsAMetadataSomeNsBMetadata { default::UnionSomeNsAMetadataSomeNsBMetadata::SomeNsAMetadata(some_ns_a::SomeNsAMetadata { label: "default_label".to_owned(), }) }
+}
+
+mod some_ns_a {
+    use super::*;
+#[derive(Debug, PartialEq, Eq, Clone, serde::Deserialize, serde::Serialize)]
+pub struct SomeNsAMetadata {
+    pub label: String,
+}
+}
+
+mod some_ns_b {
+    use super::*;
+#[derive(Debug, PartialEq, Eq, Clone, serde::Deserialize, serde::Serialize)]
+pub struct SomeNsBMetadata {
+    pub cost: i32,
 }
 }
