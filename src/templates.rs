@@ -560,7 +560,7 @@ impl Templater {
                 err!("No symbol for enum: {:?}", name)?
             }
             let mut ctx = Context::new();
-            ctx.insert("name", &fullname(name, self.prefix_namespace));
+            ctx.insert("name", &sanitize(name.name.to_upper_camel_case()));
             let doc = if let Some(d) = doc { d } else { "" };
             ctx.insert("doc", doc);
             let o: HashMap<_, _> = symbols
@@ -587,8 +587,9 @@ impl Templater {
             name, fields, doc, ..
         }) = schema
         {
+            let parent_schema = schema;
             let mut ctx = Context::new();
-            ctx.insert("name", &fullname(name, self.prefix_namespace));
+            ctx.insert("name", &sanitize(name.name.to_upper_camel_case()));
             let doc = if let Some(d) = doc { d } else { "" };
             ctx.insert("doc", doc);
             ctx.insert("derive_builders", &self.derive_builders);
@@ -797,10 +798,11 @@ impl Templater {
                     }
 
                     Schema::Fixed(FixedSchema { name, .. }) => {
-                        let f_name = fullname(name, self.prefix_namespace);
+                        let f_name =
+                            import_name(name, self.prefix_namespace, parent_schema.namespace());
                         f.push(name_std.clone());
                         w.insert(name_std.clone(), "apache_avro::serde_avro_fixed");
-                        t.insert(name_std.clone(), f_name.clone());
+                        t.insert(name_std.clone(), f_name);
                         if let Some(default) = default {
                             let default = self.parse_default(schema, gen_state, default)?;
                             d.insert(name_std.clone(), default);
@@ -834,7 +836,8 @@ impl Templater {
                     },
 
                     Schema::Record(RecordSchema { name, .. }) => {
-                        let r_name = fullname(name, self.prefix_namespace);
+                        let r_name =
+                            import_name(name, self.prefix_namespace, parent_schema.namespace());
                         f.push(name_std.clone());
                         t.insert(name_std.clone(), r_name.clone());
                         if let Some(default) = default {
@@ -844,7 +847,8 @@ impl Templater {
                     }
 
                     Schema::Enum(EnumSchema { name, .. }) => {
-                        let e_name = fullname(name, self.prefix_namespace);
+                        let e_name =
+                            import_name(name, self.prefix_namespace, parent_schema.namespace());
                         f.push(name_std.clone());
                         t.insert(name_std.clone(), e_name);
                         if let Some(default) = default {
@@ -1035,7 +1039,7 @@ impl Templater {
                 match sc {
                     Schema::Record(RecordSchema { name, .. }) => visitors.push(GenUnionVisitor {
                         variant: fullname(name, self.prefix_namespace),
-                        rust_type: fullname(name, self.prefix_namespace),
+                        rust_type: import_name(name, self.prefix_namespace, schema.namespace()),
                         serde_visitor: None,
                     }),
                     Schema::Boolean => visitors.push(GenUnionVisitor {
@@ -1460,7 +1464,7 @@ pub(crate) fn array_type(
         Schema::Duration { .. } => "Vec<apache_avro::Duration>".into(),
 
         Schema::Fixed(FixedSchema { name, .. }) => {
-            let f_name = fullname(name, prefix_namespace);
+            let f_name = import_name(name, prefix_namespace, inner.namespace());
             format!("Vec<{}>", f_name)
         }
 
@@ -1475,7 +1479,10 @@ pub(crate) fn array_type(
         }
 
         Schema::Record(RecordSchema { name, .. }) | Schema::Enum(EnumSchema { name, .. }) => {
-            format!("Vec<{}>", fullname(name, prefix_namespace))
+            format!(
+                "Vec<{}>",
+                import_name(name, prefix_namespace, inner.namespace())
+            )
         }
 
         Schema::Null => err!("Invalid use of Schema::Null in array")?,
@@ -1742,7 +1749,10 @@ pub(crate) fn option_type(
         Schema::Record(rec) => {
             let schema = Schema::Record(rec.clone());
             if find_recursion(&rec.name, &schema) {
-                format!("Option<Box<{}>>", &fullname(&rec.name, prefix_namespace))
+                format!(
+                    "Option<Box<{}>>",
+                    import_name(&rec.name, prefix_namespace, inner.namespace()),
+                )
             } else {
                 format!("Option<{}>", &fullname(&rec.name, prefix_namespace))
             }
