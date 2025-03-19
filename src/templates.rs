@@ -4,6 +4,7 @@
 
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
+use std::fmt::format;
 
 use apache_avro::Schema;
 use apache_avro::schema::{
@@ -979,13 +980,25 @@ impl Templater {
                         )
                     }
                     Schema::Record(RecordSchema { name, .. }) => {
-                        format!("{rec}({rec})", rec = fullname(name, self.prefix_namespace))
+                        format!(
+                            "{}({})",
+                            fullname(name, self.prefix_namespace),
+                            import_name(name, self.prefix_namespace, schema.namespace())
+                        )
                     }
                     Schema::Enum(EnumSchema { name, .. }) => {
-                        format!("{e}({e})", e = fullname(name, self.prefix_namespace))
+                        format!(
+                            "{}({})",
+                            fullname(name, self.prefix_namespace),
+                            import_name(name, self.prefix_namespace, schema.namespace())
+                        )
                     }
                     Schema::Fixed(FixedSchema { name, .. }) => {
-                        format!("{f}({f})", f = fullname(name, self.prefix_namespace))
+                        format!(
+                            "{}({})",
+                            fullname(name, self.prefix_namespace),
+                            import_name(name, self.prefix_namespace, schema.namespace())
+                        )
                     }
                     Schema::Decimal { .. } => "Decimal(apache_avro::Decimal)".into(),
                     Schema::BigDecimal => "BigDecimal(apache_avro::BigDecimal)".into(),
@@ -1470,6 +1483,29 @@ pub(crate) fn array_type(
     Ok(type_str)
 }
 
+fn import_name(name: &Name, prefix_namespace: bool, parent_namespace: Option<String>) -> String {
+    if !prefix_namespace || name.namespace == parent_namespace {
+        return sanitize(name.name.to_upper_camel_case());
+    }
+    match name.namespace.clone() {
+        None => format!("super::{}", sanitize(name.name.to_upper_camel_case())),
+        Some(namespace) => {
+            if parent_namespace.is_none() {
+                format!(
+                    "{}::{}",
+                    namespace.replace(".", "_"),
+                    sanitize(name.name.to_upper_camel_case())
+                )
+            } else {
+                format!(
+                    "super::{}::{}",
+                    namespace.replace(".", "_"),
+                    sanitize(name.name.to_upper_camel_case())
+                )
+            }
+        }
+    }
+}
 pub(crate) fn fullname(name: &Name, prefix_namespace: bool) -> String {
     if prefix_namespace {
         sanitize(name.fullname(None).to_upper_camel_case())
