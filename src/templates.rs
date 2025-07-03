@@ -852,7 +852,11 @@ impl Templater {
                         f.push(name_std.clone());
                         t.insert(name_std.clone(), e_name);
                         if let Some(default) = default {
-                            let default = self.parse_default(schema, gen_state, default)?;
+                            let default = self.parse_default_complex(
+                                schema,
+                                default,
+                                parent_schema.namespace(),
+                            )?;
                             d.insert(name_std.clone(), default);
                         }
                     }
@@ -1094,6 +1098,36 @@ impl Templater {
         }
     }
 
+    fn parse_default_complex(
+        &self,
+        schema: &Schema,
+        default: &serde_json::Value,
+        parent_namespace: Option<String>,
+    ) -> Result<String> {
+        let default_str = match schema {
+            Schema::Enum(EnumSchema { name, symbols, .. }) => {
+                let e_name = import_name(name, self.prefix_namespace, parent_namespace);
+                let valids: HashSet<_> = symbols
+                    .iter()
+                    .map(|s| sanitize(s.to_upper_camel_case()))
+                    .collect();
+                match default {
+                    Value::String(s) => {
+                        let s = sanitize(s.to_upper_camel_case());
+                        if valids.contains(&s) {
+                            format!("{}::{}", e_name, s)
+                        } else {
+                            err!("Invalid default: {:?}", default)?
+                        }
+                    }
+                    _ => err!("Invalid default: {:?}", default)?,
+                }
+            }
+            _ => err!("only enums supported")?,
+        };
+        Ok(default_str)
+    }
+
     fn parse_default(
         &self,
         schema: &Schema,
@@ -1280,24 +1314,7 @@ impl Templater {
 
             Schema::Record { .. } => self.record_default(schema, gen_state, default)?,
 
-            Schema::Enum(EnumSchema { name, symbols, .. }) => {
-                let e_name = fullname(name, self.prefix_namespace);
-                let valids: HashSet<_> = symbols
-                    .iter()
-                    .map(|s| sanitize(s.to_upper_camel_case()))
-                    .collect();
-                match default {
-                    Value::String(s) => {
-                        let s = sanitize(s.to_upper_camel_case());
-                        if valids.contains(&s) {
-                            format!("{}::{}", e_name, s)
-                        } else {
-                            err!("Invalid default: {:?}", default)?
-                        }
-                    }
-                    _ => err!("Invalid default: {:?}", default)?,
-                }
-            }
+            Schema::Enum { .. } => err!("enums not supported, use the separate enum function")?,
 
             Schema::Union(union) => self.union_default(union, gen_state, default)?,
 
@@ -1490,6 +1507,13 @@ pub(crate) fn array_type(
     Ok(type_str)
 }
 
+/// Formats an importable name based on its namespace and desired prefixing.
+///
+/// - `name`: The `Name` struct containing the original name and its namespace.
+/// - `prefix_namespace`: A boolean indicating whether the namespace should be prepended.
+/// - `parent_namespace`: An optional string representing the current parent namespace, used to determine if a `super::` prefix is needed.
+///
+/// Returns a `String` representing the formatted and sanitized import name.
 fn import_name(name: &Name, prefix_namespace: bool, parent_namespace: Option<String>) -> String {
     if !prefix_namespace || name.namespace == parent_namespace {
         return sanitize(name.name.to_upper_camel_case());
@@ -1513,6 +1537,7 @@ fn import_name(name: &Name, prefix_namespace: bool, parent_namespace: Option<Str
         }
     }
 }
+
 pub(crate) fn fullname(name: &Name, prefix_namespace: bool) -> String {
     if prefix_namespace {
         sanitize(name.fullname(None).to_upper_camel_case())
