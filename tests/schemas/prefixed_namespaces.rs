@@ -13,22 +13,23 @@ pub enum Status {
 }
 }
 
+mod some_ns {
 
 /// Auto-generated type for unnamed Avro union variants.
 #[derive(Debug, PartialEq, Eq, Clone, serde::Deserialize, serde::Serialize)]
 #[serde(remote = "Self")]
 pub enum UnionSomeNsAMetadataSomeNsBMetadata {
-    SomeNsAMetadata(some_ns_a::Metadata),
-    SomeNsBMetadata(some_ns_b::Metadata),
+    SomeNsAMetadata(super::some_ns_a::Metadata),
+    SomeNsBMetadata(super::some_ns_b::Metadata),
 }
 
-impl From<some_ns_a::Metadata> for UnionSomeNsAMetadataSomeNsBMetadata {
-    fn from(v: some_ns_a::Metadata) -> Self {
+impl From<super::some_ns_a::Metadata> for UnionSomeNsAMetadataSomeNsBMetadata {
+    fn from(v: super::some_ns_a::Metadata) -> Self {
         Self::SomeNsAMetadata(v)
     }
 }
 
-impl TryFrom<UnionSomeNsAMetadataSomeNsBMetadata> for some_ns_a::Metadata {
+impl TryFrom<UnionSomeNsAMetadataSomeNsBMetadata> for super::some_ns_a::Metadata {
     type Error = UnionSomeNsAMetadataSomeNsBMetadata;
 
     fn try_from(v: UnionSomeNsAMetadataSomeNsBMetadata) -> Result<Self, Self::Error> {
@@ -40,13 +41,13 @@ impl TryFrom<UnionSomeNsAMetadataSomeNsBMetadata> for some_ns_a::Metadata {
     }
 }
 
-impl From<some_ns_b::Metadata> for UnionSomeNsAMetadataSomeNsBMetadata {
-    fn from(v: some_ns_b::Metadata) -> Self {
+impl From<super::some_ns_b::Metadata> for UnionSomeNsAMetadataSomeNsBMetadata {
+    fn from(v: super::some_ns_b::Metadata) -> Self {
         Self::SomeNsBMetadata(v)
     }
 }
 
-impl TryFrom<UnionSomeNsAMetadataSomeNsBMetadata> for some_ns_b::Metadata {
+impl TryFrom<UnionSomeNsAMetadataSomeNsBMetadata> for super::some_ns_b::Metadata {
     type Error = UnionSomeNsAMetadataSomeNsBMetadata;
 
     fn try_from(v: UnionSomeNsAMetadataSomeNsBMetadata) -> Result<Self, Self::Error> {
@@ -128,7 +129,6 @@ impl<'de> serde::Deserialize<'de> for UnionSomeNsAMetadataSomeNsBMetadata {
         Self::deserialize(deserializer)
     }
 }
-mod some_ns {
 
 #[derive(Debug, PartialEq, Eq, Clone, serde::Deserialize, serde::Serialize)]
 pub struct MyRecord {
@@ -146,7 +146,7 @@ pub struct SomeRecord {
     pub metadata_a: super::some_ns_a::Metadata,
     pub metadata_b: super::some_ns_b::Metadata,
     #[serde(default = "default_somerecord_union_field")]
-    pub union_field: super::UnionSomeNsAMetadataSomeNsBMetadata,
+    pub union_field: UnionSomeNsAMetadataSomeNsBMetadata,
     pub record_without_ns: MyRecord,
 }
 
@@ -157,7 +157,7 @@ fn default_somerecord_parent() -> Option<Box<SomeRecord>> { None }
 fn default_somerecord_status() -> super::another_ns::Status { super::another_ns::Status::Unknown }
 
 #[inline(always)]
-fn default_somerecord_union_field() -> super::UnionSomeNsAMetadataSomeNsBMetadata { super::UnionSomeNsAMetadataSomeNsBMetadata::SomeNsAMetadata(super::some_ns_a::Metadata { label: "default_label".to_owned(), }) }
+fn default_somerecord_union_field() -> UnionSomeNsAMetadataSomeNsBMetadata { UnionSomeNsAMetadataSomeNsBMetadata::SomeNsAMetadata(super::some_ns_a::Metadata { label: "default_label".to_owned(), }) }
 }
 
 mod some_ns_a {
