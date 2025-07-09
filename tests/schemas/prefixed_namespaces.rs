@@ -144,6 +144,7 @@ pub struct SomeRecord {
     #[serde(default = "default_somerecord_status")]
     pub status: super::another_ns::Status,
     pub metadata_a: super::some_ns_a::Metadata,
+    #[serde(default = "default_somerecord_metadata_b")]
     pub metadata_b: super::some_ns_b::Metadata,
     #[serde(default = "default_somerecord_union_field")]
     pub union_field: UnionSomeNsAMetadataSomeNsBMetadata,
@@ -155,6 +156,9 @@ fn default_somerecord_parent() -> Option<Box<SomeRecord>> { None }
 
 #[inline(always)]
 fn default_somerecord_status() -> super::another_ns::Status { super::another_ns::Status::Unknown }
+
+#[inline(always)]
+fn default_somerecord_metadata_b() -> super::some_ns_b::Metadata { super::some_ns_b::Metadata { cost: 42, } }
 
 #[inline(always)]
 fn default_somerecord_union_field() -> UnionSomeNsAMetadataSomeNsBMetadata { UnionSomeNsAMetadataSomeNsBMetadata::SomeNsAMetadata(super::some_ns_a::Metadata { label: "default_label".to_owned(), }) }
